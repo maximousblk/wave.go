@@ -34,7 +34,7 @@ jobs:
       - name: Generate Release Notes
         run: deno run -A https://deno.land/x/ghlog/ghlog.ts ${{ github.repository }} -v '${{ github.event.inputs.tag }}'
 
-      - name: Run GoReleaser
+      - name: Build
         uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
