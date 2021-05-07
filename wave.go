@@ -1,6 +1,7 @@
 package main
 
 import (
+	// standard
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -9,29 +10,38 @@ import (
 	"math/big"
 	"regexp"
 
+	// third party
 	"github.com/alexflint/go-arg"
 	"github.com/mendsley/gojwk"
 )
 
+// goreleaser variables
+var (
+	version = "dev"
+	commit  = "untagged"
+)
+
+// commandline
 type args struct {
 	Workers int    `arg:"-w,--workers" default:"4" help:"Number of workers to spawn"`
 	Count   int    `arg:"-n,--number" default:"1" help:"Number of wallets to generate"`
-	Pattern string `arg:"positional,required" help:"Wallet address regex pattern"`
+	Pattern string `arg:"positional,required" help:"Regex pattern to match the wallet address"`
 }
 
+// set version and commit
 func (args) Version() string {
-	return "wave 0.1.0"
+	return fmt.Sprintf("wave %v (%v)", version, commit[:8])
 }
 
 func main() {
+	// parse commandline arguments
 	var args args
-
 	arg.MustParse(&args)
 
-	numWorkers := args.Workers
-	numWallets := args.Count
-	vanityPattern := args.Pattern
-	result := make(chan *Wallet, 1)
+	numWorkers := args.Workers          // number of workers to spawn
+	numWallets := args.Count            // number of wallets to generate
+	vanityPattern := args.Pattern       // regex pattern to match the wallet address
+	walletChan := make(chan *Wallet, 1) // channel to get wallets from workers
 
 	fmt.Println("Workers spawned:", numWorkers)
 	fmt.Println("Wallets to generate:", numWallets)
@@ -39,62 +49,65 @@ func main() {
 
 	for n := 1; n <= numWallets; n++ {
 		for w := 1; w <= numWorkers; w++ {
-			go worker(w, vanityPattern, result)
+			// spawn a worker
+			go worker(w, vanityPattern, walletChan)
 		}
 
-		r := <-result
+		// get wallet from worker
+		k := <-walletChan
 
-		fmt.Println("found!:", r.address)
-		keyfile, _ := gojwk.Marshal(r.key)
+		fmt.Println("found!:", k.address)
+		keyfile, _ := gojwk.Marshal(k.key) // get keyfile as json string
 
 		// TODO(@maximousblk): add logic to output to a file
-		fmt.Println("keyfile", string(keyfile))
+		fmt.Println("keyfile:", string(keyfile))
 	}
 }
 
-type Wallet struct {
-	address   string
-	key       *gojwk.Key
-	publicKey string
-	pubKey    *rsa.PublicKey
-}
-
-func worker(workerId int, pattern string, result chan<- *Wallet) {
+func worker(workerId int, pattern string, walletChan chan<- *Wallet) {
 	for {
+		// generate wallet
 		wallet := GenerateWallet()
-
 		walletAddress := wallet.address
 
+		// check if wallet address matches the provided pattern
 		match, _ := regexp.MatchString(pattern, walletAddress)
 
-		fmt.Printf("[W%v] address: %v\n", workerId, walletAddress)
+		fmt.Printf("[WORKER%v] address: %v | match: %v]\n", workerId, walletAddress, match)
 
+		// send wallet to main if matched
 		if match {
-			result <- wallet
+			walletChan <- wallet
 			break
 		}
 	}
 }
 
+type Wallet struct {
+	address string
+	key     *gojwk.Key
+}
+
 func GenerateWallet() *Wallet {
+	// generate an RSA key
 	reader := rand.Reader
 	rsaKey, _ := rsa.GenerateKey(reader, 4096)
-	w := &Wallet{}
 
-	w.key = &gojwk.Key{
+	// create new wallet instance
+	wallet := &Wallet{}
+
+	// Generate keyfile from RSA key
+	wallet.key = &gojwk.Key{
 		Kty: "RSA",
 		E:   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(rsaKey.E)).Bytes()),
 		N:   base64.RawURLEncoding.EncodeToString(rsaKey.N.Bytes()),
 		D:   base64.RawURLEncoding.EncodeToString(rsaKey.D.Bytes()),
 	}
 
-	w.pubKey = rsaKey.Public().(*rsa.PublicKey)
-	// Take the "n", in bytes and hash it using SHA256
+	// Generate wallet address
 	h := sha256.New()
-	h.Write(rsaKey.N.Bytes())
+	h.Write(rsaKey.N.Bytes())                                         // Take the "n", in bytes and hash it using SHA256
+	wallet.address = base64.RawURLEncoding.EncodeToString(h.Sum(nil)) // Then base64url encode it to get the wallet address
 
-	// Finally base64url encode it to have the resulting address
-	w.address = base64.RawURLEncoding.EncodeToString(h.Sum(nil))
-	w.publicKey = base64.RawURLEncoding.EncodeToString(rsaKey.N.Bytes())
-	return w
+	return wallet
 }
