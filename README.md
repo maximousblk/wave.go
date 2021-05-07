@@ -1,10 +1,10 @@
-# Vanity Arweave Wallet Genrator
+# Vanity Arweave Wallet Generator
 
 > _W.A.V.E_, if you squint your eyes hard enough
 
 ## Usage
 
-```sh
+```
 λ wave -h
 wave 0.1.0
 Usage: wave [--workers WORKERS] [--number NUMBER] PATTERN

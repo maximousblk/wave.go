@@ -10,6 +10,11 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GORELEASER_CURRENT_TAG: ${{ github.event.inputs.tag }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -34,9 +39,6 @@ jobs:
         with:
           version: latest
           args: release --snapshot --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_CURRENT_TAG: ${{ github.event.inputs.tag }}
 
       - name: Release v${{ github.event.inputs.tag }}
         uses: ncipollo/release-action@v1
@@ -45,5 +47,5 @@ jobs:
           tag: '${{ github.event.inputs.tag }}'
           name: 'v${{ github.event.inputs.tag }}'
           bodyFile: 'CHANGELOG.md'
-          artifacts: "dist/*.zip,dist/checksums.txt"
+          artifacts: 'dist/*.zip,dist/checksums.txt'
           draft: true
