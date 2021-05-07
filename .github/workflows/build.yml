@@ -10,7 +10,6 @@ jobs:
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GORELEASER_CURRENT_TAG: canary
 
     steps:
       - name: Checkout
@@ -27,4 +26,4 @@ jobs:
         uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
-          args: build --snapshot --rm-dist
+          args: build --snapshot --rm-dist --debug
