@@ -24,11 +24,3 @@ snapshot:
 
 release:
   draft: true
-
-changelog:
-  filters:
-    exclude:
-      - '^ci:'
-      - '^docs:'
-      - '^test:'
-      - '^chore:'
