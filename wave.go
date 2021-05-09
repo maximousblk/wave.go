@@ -57,7 +57,9 @@ func main() {
 		k := <-walletChan
 
 		fmt.Println("found!:", k.address)
-		keyfile, _ := gojwk.Marshal(k.key) // get keyfile as json string
+		keyfile, err := gojwk.Marshal(k.key) // get keyfile as json string
+
+		errcheck(err)
 
 		// TODO(@maximousblk): add logic to output to a file
 		fmt.Println("keyfile:", string(keyfile))
@@ -71,7 +73,9 @@ func worker(workerId int, pattern string, walletChan chan<- *Wallet) {
 		walletAddress := wallet.address
 
 		// check if wallet address matches the provided pattern
-		match, _ := regexp.MatchString(pattern, walletAddress)
+		match, err := regexp.MatchString(pattern, walletAddress)
+
+		errcheck(err)
 
 		fmt.Printf("[WORKER%v] address: %v | match: %v]\n", workerId, walletAddress, match)
 
@@ -91,7 +95,9 @@ type Wallet struct {
 func GenerateWallet() *Wallet {
 	// generate an RSA key
 	reader := rand.Reader
-	rsaKey, _ := rsa.GenerateKey(reader, 4096)
+	rsaKey, err := rsa.GenerateKey(reader, 4096)
+
+	errcheck(err)
 
 	// create new wallet instance
 	wallet := &Wallet{}
@@ -110,4 +116,10 @@ func GenerateWallet() *Wallet {
 	wallet.address = base64.RawURLEncoding.EncodeToString(h.Sum(nil)) // Then base64url encode it to get the wallet address
 
 	return wallet
+}
+
+func errcheck(e error) {
+	if e != nil {
+		panic(e)
+	}
 }
