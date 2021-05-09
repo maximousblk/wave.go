@@ -6,17 +6,19 @@
 
 ```
 λ wave -h
-wave 0.1.0
-Usage: wave [--workers WORKERS] [--number NUMBER] PATTERN
+wave 0.2.0 (8e7c6876)
+Usage: wave [--workers WORKERS] [--number NUMBER] [--output OUTPUT] PATTERN
 
 Positional arguments:
-  PATTERN                Wallet address regex pattern
+  PATTERN                Regex pattern to match the wallet address
 
 Options:
   --workers WORKERS, -w WORKERS
                          Number of workers to spawn [default: 4]
   --number NUMBER, -n NUMBER
                          Number of wallets to generate [default: 1]
+  --output OUTPUT, -o OUTPUT
+                         Output directory [default: ./keyfiles]
   --help, -h             display this help and exit
   --version              display version and exit
 ```
